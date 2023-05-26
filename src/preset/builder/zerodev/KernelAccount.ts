@@ -1,7 +1,6 @@
 import { BigNumber, BigNumberish, BytesLike, Contract, ethers } from "ethers";
 import { UserOperationBuilder } from "../../../builder";
 import {
-  EOASignature,
   estimateUserOperationGas,
   getGasPrice,
 } from "../../middleware";
@@ -15,6 +14,7 @@ import {
 } from "../../../typechain";
 import { UserOperationMiddlewareFn } from "../../../types";
 import { DEFAULT_MULTISEND_ADDRESS, DUMMY_PAYMASTER_AND_DATA, DUMMY_SIGNATURE } from "./constants";
+import { encodeMultiSend } from "./utilities/encodeMultiSend";
 
 
 export class KernelAccount extends UserOperationBuilder {
@@ -78,7 +78,7 @@ export class KernelAccount extends UserOperationBuilder {
       instance.initCode = ethers.utils.hexConcat([
         instance.factory.address,
         instance.factory.interface.encodeFunctionData("createAccount", [
-          address,
+          instance.address,
           index
         ]),
       ]);
@@ -120,14 +120,25 @@ export class KernelAccount extends UserOperationBuilder {
     );
   }
 
-  executeBatch(to: Array<string>, data: Array<BytesLike>) {
+  executeBatch(to: Array<string>, data: Array<BytesLike>, delegateCall: Array<boolean>) {
+    const numberOfCalls = to.length
+    if (numberOfCalls !== data.length || numberOfCalls !== delegateCall.length) {
+      // TODO
+      throw Error("Wrong length")
+    }
     const multiSend = new Contract(this.multiSendAddress, [
       'function multiSend(bytes memory transactions)',
     ])
 
+    const calls = to.map((item, i) => ({
+      to: item,
+      data: data[i],
+      delegateCall: delegateCall[i]
+    }))
+
     const multiSendCalldata = multiSend.interface.encodeFunctionData(
       'multiSend',
-      [data]
+      [encodeMultiSend(calls)]
     )
     return this.executeDelegate(multiSend.address, 0, multiSendCalldata)
   }
