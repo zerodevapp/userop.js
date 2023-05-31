@@ -15,6 +15,7 @@ import {
 import { UserOperationMiddlewareFn } from "../../../types";
 import { DEFAULT_MULTISEND_ADDRESS, DUMMY_SIGNATURE, ENTRYPOINT_ADDRESS, KERNEL_FACTORY_ADDRESS } from "./constants";
 import { encodeMultiSend } from "./utilities/encodeMultiSend";
+import { MultiSendCall } from "./types";
 
 export interface KernelAccountOptions {
   address: string,
@@ -118,21 +119,11 @@ export class KernelAccount extends UserOperationBuilder {
     );
   }
 
-  executeBatch(to: Array<string>, data: Array<BytesLike>, delegateCall: Array<boolean>) {
-    const numberOfCalls = to.length
-    if (numberOfCalls !== data.length || numberOfCalls !== delegateCall.length) {
-      // TODO
-      throw Error("Wrong length")
-    }
+  executeBatch(calls: MultiSendCall[]) {
     const multiSend = new Contract(this.multiSendAddress, [
       'function multiSend(bytes memory transactions)',
     ])
 
-    const calls = to.map((item, i) => ({
-      to: item,
-      data: data[i],
-      delegateCall: delegateCall[i]
-    }))
 
     const multiSendCalldata = multiSend.interface.encodeFunctionData(
       'multiSend',
