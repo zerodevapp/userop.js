@@ -31,7 +31,8 @@ export class SimpleAccount extends UserOperationBuilder {
   ) {
     super();
     this.signer = signer;
-    this.provider = new ethers.providers.JsonRpcProvider(ERC4337NodeRpc);
+    this.provider = new ethers.providers.JsonRpcProvider({url: ERC4337NodeRpc, skipFetchSetup: true}, 80001);
+    console.log(this.provider)
     this.entryPoint = EntryPoint__factory.connect(entryPoint, this.provider);
     this.factory = SimpleAccountFactory__factory.connect(
       factory,

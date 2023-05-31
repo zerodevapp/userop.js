@@ -11,13 +11,12 @@ interface VerifyingPaymasterResult {
 
 // Assumes the paymaster interface in https://hackmd.io/@stackup/H1oIvV-qi
 export const verifyingPaymaster =
-  (paymasterRpc: string, context: any): UserOperationMiddlewareFn =>
+  (provider: ethers.providers.JsonRpcProvider, context: any): UserOperationMiddlewareFn =>
   async (ctx) => {
     ctx.op.verificationGasLimit = ethers.BigNumber.from(
       ctx.op.verificationGasLimit
     ).mul(3);
 
-    const provider = new ethers.providers.JsonRpcProvider(paymasterRpc);
     const pm = (await provider.send("pm_sponsorUserOperation", [
       OpToJSON(ctx.op),
       ctx.entryPoint,

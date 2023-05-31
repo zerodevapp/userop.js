@@ -16,8 +16,8 @@ export class Client implements IClient {
   public waitTimeoutMs: number;
   public waitIntervalMs: number;
 
-  private constructor(rpcUrl: string, entryPoint: string) {
-    this.provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+  private constructor(provider: ethers.providers.JsonRpcProvider, entryPoint: string) {
+    this.provider = provider
 
     this.entryPoint = EntryPoint__factory.connect(entryPoint, this.provider);
     this.chainId = ethers.BigNumber.from(1);
@@ -25,9 +25,9 @@ export class Client implements IClient {
     this.waitIntervalMs = 5000;
   }
 
-  public static async init(rpcUrl: string, entryPoint: string) {
-    const instance = new Client(rpcUrl, entryPoint);
-    instance.chainId = await instance.provider
+  public static async init(provider: ethers.providers.JsonRpcProvider, entryPoint: string, chainId?: BigNumberish) {
+    const instance = new Client(provider, entryPoint);
+    instance.chainId = chainId ?? await instance.provider
       .getNetwork()
       .then((network) => ethers.BigNumber.from(network.chainId));
 

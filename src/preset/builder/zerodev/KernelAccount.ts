@@ -13,29 +13,41 @@ import {
   Kernel__factory,
 } from "../../../typechain";
 import { UserOperationMiddlewareFn } from "../../../types";
-import { DEFAULT_MULTISEND_ADDRESS, DUMMY_PAYMASTER_AND_DATA, DUMMY_SIGNATURE } from "./constants";
+import { DEFAULT_MULTISEND_ADDRESS, DUMMY_SIGNATURE, ENTRYPOINT_ADDRESS, KERNEL_FACTORY_ADDRESS } from "./constants";
 import { encodeMultiSend } from "./utilities/encodeMultiSend";
 
+export interface KernelAccountOptions {
+  address: string,
+  provider: ethers.providers.JsonRpcProvider,
+  entryPoint?: string,
+  factoryAddress?: string,
+  multiSendAddress?: string
+}
+
+export interface KernelAccountInitOptions extends KernelAccountOptions {
+    index?: number,
+    paymasterMiddleware?: UserOperationMiddlewareFn,
+}
 
 export class KernelAccount extends UserOperationBuilder {
-  private address: string;
-  private provider: ethers.providers.JsonRpcProvider;
-  private entryPoint: EntryPoint;
-  private factory: KernelFactory;
-  private initCode: string;
-  private multiSendAddress: string;
+  protected address: string;
+  protected provider: ethers.providers.JsonRpcProvider;
+  public entryPoint: EntryPoint;
+  protected factory: KernelFactory;
+  protected initCode: string;
+  protected multiSendAddress: string;
   proxy: Kernel;
 
-  private constructor(
-    address: string,
-    ERC4337NodeRpc: string,
-    entryPoint: string,
-    factoryAddress: string,
+  protected constructor({
+    address,
+    provider,
+    entryPoint = ENTRYPOINT_ADDRESS,
+    factoryAddress = KERNEL_FACTORY_ADDRESS,
     multiSendAddress = DEFAULT_MULTISEND_ADDRESS
-  ) {
+  }: KernelAccountOptions) {
     super();
     this.address = address
-    this.provider = new ethers.providers.JsonRpcProvider(ERC4337NodeRpc);
+    this.provider = provider;
     this.entryPoint = EntryPoint__factory.connect(entryPoint, this.provider);
     this.factory = KernelFactory__factory.connect(
       factoryAddress,
@@ -50,7 +62,6 @@ export class KernelAccount extends UserOperationBuilder {
   }
 
   private resolveAccount: UserOperationMiddlewareFn = async (ctx) => {
-    this.proxy
     const senderAddressCode = await this.provider.getCode(this.proxy.address)
     const isDeployed = senderAddressCode.length > 2
     let nonce = BigNumber.from(0)
@@ -59,20 +70,8 @@ export class KernelAccount extends UserOperationBuilder {
     ctx.op.initCode = ctx.op.nonce.eq(0) ? this.initCode : "0x";
   };
 
-  public static async init(
-    address: string,
-    ERC4337NodeRpc: string,
-    entryPoint: string,
-    factoryAddress: string,
-    index = 0,
-    paymasterMiddleware?: UserOperationMiddlewareFn,
-  ): Promise<KernelAccount> {
-    const instance = new KernelAccount(
-      address,
-      ERC4337NodeRpc,
-      entryPoint,
-      factoryAddress
-    );
+  public static async init({index = 0, paymasterMiddleware, ...options}: KernelAccountInitOptions): Promise<KernelAccount> {
+    const instance = new KernelAccount(options);
 
     try {
       instance.initCode = ethers.utils.hexConcat([
@@ -95,7 +94,6 @@ export class KernelAccount extends UserOperationBuilder {
     const base = instance
       .useDefaults({
         sender: instance.proxy.address,
-        paymasterAndData: DUMMY_PAYMASTER_AND_DATA,
         signature: DUMMY_SIGNATURE,
       })
       .useMiddleware(instance.resolveAccount)
