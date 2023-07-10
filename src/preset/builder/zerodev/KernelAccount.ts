@@ -92,19 +92,18 @@ export class KernelAccount extends UserOperationBuilder {
       instance.proxy = Kernel__factory.connect(addr, instance.provider);
     }
 
-    const base = instance
+    let base = instance
       .useDefaults({
         sender: instance.proxy.address,
         signature: DUMMY_SIGNATURE,
       })
       .useMiddleware(instance.resolveAccount)
       .useMiddleware(getGasPrice(instance.provider));
-
-    const withPM = paymasterMiddleware
-      ? base.useMiddleware(paymasterMiddleware)
-      : base.useMiddleware(estimateUserOperationGas(instance.provider));
-
-    return withPM
+    
+    if (paymasterMiddleware) base = base.useMiddleware(paymasterMiddleware)
+    
+    
+    return base.useMiddleware(estimateUserOperationGas(instance.provider))
   }
 
   execute(to: string, value: BigNumberish, data: BytesLike) {

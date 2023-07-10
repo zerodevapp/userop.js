@@ -23,8 +23,8 @@ export const verifyingPaymaster =
       context,
     ])) as VerifyingPaymasterResult;
 
-    ctx.op.paymasterAndData = pm.paymasterAndData;
-    ctx.op.preVerificationGas = pm.preVerificationGas;
-    ctx.op.verificationGasLimit = pm.verificationGasLimit;
-    ctx.op.callGasLimit = pm.callGasLimit;
+    ctx.op.paymasterAndData = pm.paymasterAndData ?? ctx.op.paymasterAndData;
+    ctx.op.preVerificationGas = pm.preVerificationGas ?? ctx.op.preVerificationGas;
+    ctx.op.verificationGasLimit = pm.verificationGasLimit ?? ctx.op.verificationGasLimit;
+    ctx.op.callGasLimit = pm.callGasLimit ?? ctx.op.callGasLimit;
   };
